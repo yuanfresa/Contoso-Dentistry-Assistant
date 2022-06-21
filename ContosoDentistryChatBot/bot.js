@@ -20,31 +20,28 @@ class DentaBot extends ActivityHandler {
         this.IntentRecognizer = new IntentRecognizer(configuration.LuisConfiguration);
 
         this.onMessage(async (context, next) => {
-            // send user input to QnA Maker
-            const qnaResults = await this.qnaMaker.getAnswers(context);
-            // send user input to LUIS
-            const LuisResult = await this.intentRecognizer.executeLuisQuery(context);
-            const LuistopIntent = LuisResult.luisResult.prediction.topIntent;
-            
-            let reply_message;
-            if (LuisResult.intents[LuistopIntent].score>0.65) {
-                if (LuistopIntent === 'getAvailability') {
-                    reply_message = await this.DentistScheduler.getAvailability(this.IntentRecognizer.getTimeEntity(LuisResult));
-                } else if (LuistopIntent === "scheduleAppointment") {
-                    reply_message = await this.DentistScheduler.scheduleAppointment(this.IntentRecognizer.getTimeEntity(LuisResult));
+
+            try{
+                // send user input to QnA Maker
+                const qnaResults = await this.QnAMaker.getAnswers(context);
+                // send user input to LUIS
+                const LuisResult = await this.IntentRecognizer.executeLuisQuery(context);
+                const LuistopIntent = LuisResult.luisResult.prediction.topIntent;
+    
+                let reply_message;
+                if (LuisResult.intents[LuistopIntent].score>0.65) {
+                    if (LuistopIntent === 'getAvailability') {
+                        reply_message = await this.DentistScheduler.getAvailability(this.IntentRecognizer.getTimeEntity(LuisResult));
+                    } else {
+                        reply_message = await this.DentistScheduler.scheduleAppointment(this.IntentRecognizer.getTimeEntity(LuisResult));
+                    };
+                } else {
+                    reply_message = answers[0].answer;
                 }
-                else {
-                    reply_message = "Sorry, I don't understand"
-                };
-            } else if (qnaResults[0]) {
-                reply_message = qnaResults[0].answer;
-            } else {
-                // If no answers were returned from QnA Maker, reply with help.
-                reply_message = `I'm not sure`
-                + 'I found an answer to your question'
-                + `You can ask me questions about dentistry like "When is the dentistry open?`
+                await context.sendActivity(MessageFactory.text(reply_message, reply_message));
+            } catch(e) {
+                console.error(e);
             }
-            await context.sendActivity(MessageFactory.text(reply_message, reply_message));
 
             await next();
     });
