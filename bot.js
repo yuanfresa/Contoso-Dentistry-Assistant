@@ -36,7 +36,7 @@ class DentaBot extends ActivityHandler {
                         reply_message = await this.DentistScheduler.scheduleAppointment(this.IntentRecognizer.getTimeEntity(LuisResult));
                     };
                 } else {
-                    reply_message = answers[0].answer;
+                    reply_message = qnaResults[0].answer;
                 }
                 await context.sendActivity(MessageFactory.text(reply_message, reply_message));
             } catch(e) {
